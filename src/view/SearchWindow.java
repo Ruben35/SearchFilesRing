@@ -59,7 +59,7 @@ public class SearchWindow extends JFrame implements ActionListener {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
-        //setIconImage(new ImageIcon(getClass().getResource("/com/escom/gato/imgs/tic-tac-toe.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/imgs/fileSearch.png")).getImage());
         mainPanel=new JPanel();
         mainPanel.setLayout(null);
         mainPanel.setBackground(bgColor);
