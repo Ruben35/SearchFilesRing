@@ -24,6 +24,7 @@ public class ServerMulticast extends Thread{
         return instance;
     }
 
+    @Override
     public void run(){
         try{
             SocketAddress remote = new InetSocketAddress(host, port);

@@ -2,8 +2,10 @@ package contexts;
 
 import interfacesRMI.searchInterface;
 import objects.NodeInformation;
-import threads.ClienteMulticast;
+import threads.ClientDownload;
+import threads.ClientMulticast;
 import threads.ServerMulticast;
+import threads.ServerUpload;
 import utils.FilesUtil;
 import utils.Print;
 import utils.RMIportSorter;
@@ -143,7 +145,7 @@ public class ActualNodeData implements searchInterface{
     }
 
     /**
-     * Method to initialize the node
+     * Method to initialize the node setting it in the net, initializing his RMIsServer and download Server
      */
     public void initializeNode(){
         if(!initializedNode){
@@ -157,7 +159,8 @@ public class ActualNodeData implements searchInterface{
             this.myInfo.setRMIport(MyRMIPort);
             this.membersOfRing.add(myInfo);
             updateSuccessorPredecessor();
-            initializeRMIServer();
+            initializeRMIServer();//Initializing RMI Server
+            ServerUpload.getInstance().start();//Initializing ServerUpload
             this.initializedNode=true;
             SearchWindow.getWindow().updateTableAndLables();
         }
@@ -201,7 +204,7 @@ public class ActualNodeData implements searchInterface{
      * then it initialize the node and start to echo the RMIPort
      */
     public void connect(){
-        ClienteMulticast.getInstance().start(); //Starting getting members of the net
+        ClientMulticast.getInstance().start(); //Starting getting members of the net
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
@@ -263,7 +266,7 @@ public class ActualNodeData implements searchInterface{
     }
 
     /**
-     * Local method to initiate a search of a file on the Net
+     * Local method to initiate a search of a file on the Net and if exist, download it.
      * @param fileName
      */
     public void searchFileOnNet(String fileName){
@@ -286,6 +289,7 @@ public class ActualNodeData implements searchInterface{
                         indexToAsk=indexToAsk!=(membersOfRing.size()-1)?indexToAsk+1:0;
                     }else{
                         Print.strong("The file was found by "+membersOfRing.get(indexToAsk).toString()+"!");
+                        new ClientDownload(fileName, membersOfRing.get(indexToAsk)).start();//Start download
                     }
                 }while(indexToAsk!=membersOfRing.indexOf(myInfo) && !founded);
                 if(!founded)

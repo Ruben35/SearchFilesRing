@@ -11,19 +11,20 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
 
-public class ClienteMulticast extends Thread{
+public class ClientMulticast extends Thread{
     private String host="228.1.1.1";
     private int port=2000;
     private ActualNodeData nodeData= ActualNodeData.getInstance();;
-    private static ClienteMulticast instance;
+    private static ClientMulticast instance;
 
-    public static ClienteMulticast getInstance(){
+    public static ClientMulticast getInstance(){
         if(instance==null){
-            instance= new ClienteMulticast();
+            instance= new ClientMulticast();
         }
         return instance;
     }
 
+    @Override
     public void run(){
         try {
             NetworkInterface netInterface = NetworkInterface.getByName("wlan0");

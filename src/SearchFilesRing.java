@@ -1,11 +1,4 @@
-import contexts.ActualNodeData;
-import threads.ClienteMulticast;
-import threads.ServerMulticast;
-import utils.Print;
 import view.SearchWindow;
-
-import java.io.File;
-import java.util.Scanner;
 
 public class SearchFilesRing {
 

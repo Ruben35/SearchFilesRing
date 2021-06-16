@@ -220,7 +220,6 @@ public class SearchWindow extends JFrame implements ActionListener {
         JTSearch.setFont(new Font("Segoe UI", Font.PLAIN, 28));
         JTSearch.setForeground(textBlue);
         JTSearch.setBounds(35, 411, 400, 40);
-        JTSearch.addActionListener(this);
         mainPanel.add(JTSearch);
 
         JBsearch = new JButton("Search");
