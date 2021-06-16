@@ -26,7 +26,6 @@ public class ActualNodeData implements searchInterface{
     private static Registry registry;
     private static ActualNodeData instance;
     private File source, destination;
-    public int number;
 
     /**
      * Method to get instance
@@ -37,8 +36,6 @@ public class ActualNodeData implements searchInterface{
             try {
                 NetworkInterface networkInterface = NetworkInterface.getByName("wlan0");
                 instance = new ActualNodeData(networkInterface.getInetAddresses().nextElement());
-                instance.number=(int)(Math.random() * (9999-1+1)) + 1;
-                System.out.println("My Number: "+instance.number);
             } catch (SocketException e) {
                 e.printStackTrace();
             }
@@ -265,82 +262,55 @@ public class ActualNodeData implements searchInterface{
         }
     }
 
-    public String searchNumber(int number){
-        String ip=successor.getIPaddress().toString();
-        ip=ip.substring(1, ip.length());
-        int indexToAsk=membersOfRing.indexOf(successor);
-        int response=-1;
-        try {
-            Registry registry = LocateRegistry.getRegistry(ip, successor.getRMIport());
-            searchInterface stub = (searchInterface) registry.lookup("searchInterface");
-            do {
-                System.out.println("Preguntando a: "+membersOfRing.get(indexToAsk).toString());
-                response = stub.searchNumberRemote(indexToAsk, number);
-                if (response == -1) {
-                    System.out.println("No lo encontró: " + membersOfRing.get(indexToAsk).toString());
-                    indexToAsk=indexToAsk!=(membersOfRing.size()-1)?indexToAsk+1:0;
-                }
-            }while(indexToAsk!=membersOfRing.indexOf(myInfo) && response== -1);
-        }catch (Exception e){
-            System.err.println("Something went wrong...");
-            e.printStackTrace();
-        }
-        return (response!=-1)?"Se encontró numero!":"No se encontró";
-    }
-
+    /**
+     * Local method to initiate a search of a file on the Net
+     * @param fileName
+     */
     public void searchFileOnNet(String fileName){
-        String ip=successor.getIPaddress().toString();
-        ip=ip.substring(1, ip.length());
-        int indexToAsk=membersOfRing.indexOf(successor);
-        boolean founded=false;
-        try{
-            Registry registry = LocateRegistry.getRegistry(ip, successor.getRMIport());
-            searchInterface stub = (searchInterface) registry.lookup("searchInterface");
-            do {
-                Print.info("Asking to "+membersOfRing.get(indexToAsk).toString()+"...");
-                founded = stub.searchRemoteFile(indexToAsk, fileName);
-                if (!founded) {
-                    Print.error(membersOfRing.get(indexToAsk).toString()+" didn't find the file...");
-                    indexToAsk=indexToAsk!=(membersOfRing.size()-1)?indexToAsk+1:0;
-                }else{
-                    Print.strong("The file was found by "+membersOfRing.get(indexToAsk).toString()+"!");
-                }
-            }while(indexToAsk!=membersOfRing.indexOf(myInfo) && !founded);
-            if(!founded)
-                Print.error("The file is not on the net!");
-        }catch (Exception e){
-            System.err.println("Something went wrong...");
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public int searchNumberRemote(int indexNode, int number) throws RemoteException {
-        int response=-1;
-        if(isMyIndex(indexNode)){
-            response=number==this.number?number:-1;
-            System.out.println("Me preguntaron si yo tengo "+number);
-        }else{
-            try {
-                String ip=successor.getIPaddress().toString();
-                Registry registry = LocateRegistry.getRegistry(ip.substring(1, ip.length()), successor.getRMIport());
+        //First check on my own files
+        if(FilesUtil.isFileOnDirectory(fileName,this.source)){
+            Print.strong("I already have the file to search on my own sources folder!");
+        }else{ //If i don't have it in my sources folder, then ask in the net
+            String ip=successor.getIPaddress().toString();
+            ip=ip.substring(1, ip.length());
+            int indexToAsk=membersOfRing.indexOf(successor);
+            boolean founded=false;
+            try{
+                Registry registry = LocateRegistry.getRegistry(ip, successor.getRMIport());
                 searchInterface stub = (searchInterface) registry.lookup("searchInterface");
-                response=stub.searchNumberRemote(indexNode,number);
+                do {
+                    Print.info("Asking to "+membersOfRing.get(indexToAsk).toString()+"...");
+                    founded = stub.searchRemoteFile(indexToAsk, fileName);
+                    if (!founded) {
+                        Print.error(membersOfRing.get(indexToAsk).toString()+" didn't find the file...");
+                        indexToAsk=indexToAsk!=(membersOfRing.size()-1)?indexToAsk+1:0;
+                    }else{
+                        Print.strong("The file was found by "+membersOfRing.get(indexToAsk).toString()+"!");
+                    }
+                }while(indexToAsk!=membersOfRing.indexOf(myInfo) && !founded);
+                if(!founded)
+                    Print.error("The file is not on the net!");
             }catch (Exception e){
                 System.err.println("Something went wrong...");
                 e.printStackTrace();
             }
         }
-        return response;
     }
 
+    /**
+     * Remote method to see if Im the node that needs to check if I have the file or i need to ask to my predeccessor.
+     * @param indexNode
+     * @param fileName
+     * @return
+     * @throws RemoteException
+     */
     @Override
     public boolean searchRemoteFile(int indexNode, String fileName) throws RemoteException {
         if (isMyIndex(indexNode)){
             Print.info("Someone asks if I have \""+fileName+"\"");
             boolean IHaveIt=FilesUtil.isFileOnDirectory(fileName,this.source);
             if(IHaveIt){
-                Print.strong("Yes!, I have\""+fileName+"\"");
+                Print.strong("Yes!, I have \""+fileName+"\"");
                 return true;
             }else{
                 Print.error("Sorry, I don't have \""+fileName+"\"");
@@ -348,6 +318,7 @@ public class ActualNodeData implements searchInterface{
             }
         }else{
             try {
+                Print.info("Asking to "+membersOfRing.get(indexNode).toString()+"...");
                 String ip=successor.getIPaddress().toString();
                 Registry registry = LocateRegistry.getRegistry(ip.substring(1, ip.length()), successor.getRMIport());
                 searchInterface stub = (searchInterface) registry.lookup("searchInterface");
