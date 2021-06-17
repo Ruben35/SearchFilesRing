@@ -237,8 +237,6 @@ public class SearchWindow extends JFrame implements ActionListener {
         scrollTextArea.setAutoscrolls(true);
         PrintStream printStream = new PrintStream(new CustomOutputStreamPane(textArea));
         System.setOut(printStream);
-        System.out.println("Hola");
-
         mainPanel.add(scrollTextArea);
     }
 
@@ -252,6 +250,7 @@ public class SearchWindow extends JFrame implements ActionListener {
                 port=Integer.parseInt(JTport.getText());
                 btn.setEnabled(false);
                 JTport.setEditable(false);
+                nodeData.setMyPort(port);
                 this.setTitle("SearchFilesInRing | Port: "+port);
                 Print.info("Port of datagram server: "+port);
             }
@@ -347,7 +346,7 @@ public class SearchWindow extends JFrame implements ActionListener {
             }
             for(int i=0;i<nodeData.getMembersOfRing().size();i++){
                 NodeInformation node=nodeData.getMembersOfRing().get(i);
-                String temp[]={(i+1)+"",node.getIPaddress().toString(), node.getRMIport()+""};
+                String temp[]={(i+1)+"",node.toString(), node.getRMIport()+""};
                 tableModel.addRow(temp);
                 if(nodeData.isMyIndex(i))
                     table.setRowSelectionInterval(i,i);

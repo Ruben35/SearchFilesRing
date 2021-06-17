@@ -40,7 +40,7 @@ public class ServerMulticast extends Thread{
             InetAddress group = InetAddress.getByName(host);
             datagramChannel.join(group, netInterface);
             ByteBuffer buffer = ByteBuffer.allocate(4);
-            Print.info("Starting to echo my RMIport: "+nodeData.getMyRMIPort());
+            Print.info("Starting to echo my Port: "+nodeData.getMyPort());
             Print.log("\n" + nodeData.toString());
             while(true) {
                 sel.select();
@@ -51,7 +51,7 @@ public class ServerMulticast extends Thread{
                     if (key.isWritable()) {
                         DatagramChannel channel = (DatagramChannel) key.channel();
                         buffer.clear();
-                        buffer.putInt(nodeData.getMyRMIPort());
+                        buffer.putInt(nodeData.getMyPort());
                         buffer.flip();
                         channel.send(buffer, remote);
                         continue;

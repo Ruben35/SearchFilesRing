@@ -51,11 +51,11 @@ public class ClientMulticast extends Thread{
                         buffer.clear();
                         SocketAddress emisor = channel.receive(buffer);
                         buffer.flip();
-                        int RMIPortOfMember=buffer.getInt();
+                        int PortOfMember=buffer.getInt();
                         //If the node do not contains the member, just added.
-                        if(!nodeData.containsMember(RMIPortOfMember)){
+                        if(!nodeData.containsMember(PortOfMember)){
                             InetSocketAddress address = (InetSocketAddress)emisor;
-                            nodeData.addNewMemberToRing(new NodeInformation(address.getAddress(), RMIPortOfMember));
+                            nodeData.addNewMemberToRing(new NodeInformation(address.getAddress(), PortOfMember));
                         }
                         continue;
                     }

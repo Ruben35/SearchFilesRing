@@ -4,17 +4,17 @@ import java.net.InetAddress;
 
 public class NodeInformation {
     private int RMIport;
+    private int MyPort;
     private InetAddress IPaddress;
 
-    public NodeInformation(InetAddress IPaddress, int RMIport){
-        this.RMIport = RMIport;
+    public NodeInformation(InetAddress IPaddress, int port){
+        this.MyPort = port;
         this.IPaddress = IPaddress;
     }
 
     public NodeInformation(InetAddress IPaddress){
         this.IPaddress = IPaddress;
     }
-
 
     public int getRMIport() {
         return RMIport;
@@ -33,6 +33,14 @@ public class NodeInformation {
     }
 
     public String toString(){
-        return this.IPaddress+":"+this.getRMIport();
+        return this.IPaddress+":"+this.getMyPort();
+    }
+
+    public int getMyPort() {
+        return MyPort;
+    }
+
+    public void setMyPort(int myPort) {
+        MyPort = myPort;
     }
 }

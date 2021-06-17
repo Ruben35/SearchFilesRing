@@ -8,13 +8,14 @@ import threads.ServerMulticast;
 import threads.ServerUpload;
 import utils.FilesUtil;
 import utils.Print;
-import utils.RMIportSorter;
+import utils.portSorter;
 import view.SearchWindow;
 
 import java.io.File;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -64,6 +65,14 @@ public class ActualNodeData implements searchInterface{
         if(!initializedNode)
             throw new Exception("Node not initialized", new Throwable("You need to initialize your node first in order to use this method..."));
         return this.myInfo.getRMIport();
+    }
+
+    public int getMyPort(){
+        return this.myInfo.getMyPort();
+    }
+
+    public void setMyPort(int Port){
+        this.myInfo.setMyPort(Port);
     }
 
     /**
@@ -145,25 +154,13 @@ public class ActualNodeData implements searchInterface{
     }
 
     /**
-     * Method to initialize the node setting it in the net, initializing his RMIsServer and download Server
+     * Method to initialize the node and setting it in the net
      */
     public void initializeNode(){
-        if(!initializedNode){
-            int MyRMIPort=0;
-            if(membersOfRing.size()==0){
-                MyRMIPort=9000; //First node on Ring Net
-            }else{
-                membersOfRing.sort(new RMIportSorter());
-                MyRMIPort=membersOfRing.get(membersOfRing.size()-1).getRMIport()+1;
-            }
-            this.myInfo.setRMIport(MyRMIPort);
             this.membersOfRing.add(myInfo);
-            updateSuccessorPredecessor();
-            initializeRMIServer();//Initializing RMI Server
-            ServerUpload.getInstance().start();//Initializing ServerUpload
+            updateSuccessorPredecessorAndRMIPorts();
             this.initializedNode=true;
             SearchWindow.getWindow().updateTableAndLables();
-        }
     }
 
     /**
@@ -175,10 +172,16 @@ public class ActualNodeData implements searchInterface{
     }
 
     /**
-     * Method to update the Successor and Predeccessor
+     * Method to update the Successor and Predeccessor and Resset all the RMIports (and obviously their RMIservers)
      */
-    private void updateSuccessorPredecessor(){
-        membersOfRing.sort(new RMIportSorter());
+    private void updateSuccessorPredecessorAndRMIPorts(){
+        membersOfRing.sort(new portSorter());
+        //Updating RMIports
+        int RMIPort=9000;
+        for(int i=0; i<membersOfRing.size();i++){
+            membersOfRing.get(i).setRMIport(RMIPort);
+            RMIPort++;
+        }
         if(membersOfRing.size()==1){
             successor=predecessor=myInfo;
         }else{
@@ -188,15 +191,20 @@ public class ActualNodeData implements searchInterface{
             //If it is the first in the list, the predecessor is the last, otherwise is the one behind it.
             predecessor=(myIndex==0)?membersOfRing.get(membersOfRing.size()-1):membersOfRing.get(myIndex-1);
         }
+        if(!initializedNode){
+            initializeRMIServer(); // If first time in the net, just initializeHisServer
+        }else{
+            restartRMIServer(); // If it was already on the net, it also needs to restart his RMIserver (unexporting his object)
+        }
     }
 
     /**
      * Method to see if we have already the member in the list of members
-     * @param RMIportMember
+     * @param portMember
      * @return
      */
-    public boolean containsMember(final int RMIportMember){
-        return membersOfRing.stream().anyMatch(o -> o.getRMIport()==RMIportMember);
+    public boolean containsMember(final int portMember){
+        return membersOfRing.stream().anyMatch(o -> o.getMyPort()==portMember);
     }
 
     /**
@@ -223,7 +231,7 @@ public class ActualNodeData implements searchInterface{
     public void addNewMemberToRing(NodeInformation newMember) {
         this.membersOfRing.add(newMember);
         if(initializedNode){
-            updateSuccessorPredecessor();
+            updateSuccessorPredecessorAndRMIPorts();
             SearchWindow.getWindow().updateTableAndLables();
         }
         Print.log("\n"+this.toString());
@@ -248,7 +256,11 @@ public class ActualNodeData implements searchInterface{
         registry=null;
         try {
             //puerto default del rmiregistry
-            registry=java.rmi.registry.LocateRegistry.createRegistry(port);
+            try{
+                registry=java.rmi.registry.LocateRegistry.createRegistry(port);
+            }catch(Exception f){
+                registry=java.rmi.registry.LocateRegistry.getRegistry(port); //If it already exists
+            }
         } catch (Exception e) {
             System.err.println("Excepcion RMI del registry:");
             e.printStackTrace();
@@ -257,9 +269,24 @@ public class ActualNodeData implements searchInterface{
             System.setProperty("java.rmi.server.codebase","file:/C:/Temp/searchInterface/");
             System.setProperty("java.rmi.server.hostname", ip);
             searchInterface stub = (searchInterface) UnicastRemoteObject.exportObject(instance, 0);
-            registry.bind("searchInterface", stub);
+            try {
+                registry.bind("searchInterface", stub); //Binding for the first time
+            }catch(Exception f){
+                registry.rebind("searchInterface", stub); //If the name was already on registry, just rebind.
+            }
             Print.info("RMI server ready...");
         } catch (Exception e) {
+            System.err.println("Exception on server: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    private void restartRMIServer(){
+        try {
+            UnicastRemoteObject.unexportObject(instance, true);
+            Thread.sleep(2000);
+            initializeRMIServer();
+        } catch (NoSuchObjectException | InterruptedException e) {
             System.err.println("Exception on server: " + e.toString());
             e.printStackTrace();
         }
@@ -276,7 +303,7 @@ public class ActualNodeData implements searchInterface{
         }else{ //If i don't have it in my sources folder, then ask in the net
             String ip=successor.getIPaddress().toString();
             ip=ip.substring(1, ip.length());
-            int indexToAsk=membersOfRing.indexOf(successor);
+            int indexToAsk=membersOfRing.indexOf(successor); //
             boolean founded=false;
             try{
                 Registry registry = LocateRegistry.getRegistry(ip, successor.getRMIport());
@@ -291,7 +318,7 @@ public class ActualNodeData implements searchInterface{
                         Print.strong("The file was found by "+membersOfRing.get(indexToAsk).toString()+"!");
                         new ClientDownload(fileName, membersOfRing.get(indexToAsk)).start();//Start download
                     }
-                }while(indexToAsk!=membersOfRing.indexOf(myInfo) && !founded);
+                }while(indexToAsk!=membersOfRing.indexOf(myInfo) && !founded); //While to round de ring in order to ask each of them succesor by succesor
                 if(!founded)
                     Print.error("The file is not on the net!");
             }catch (Exception e){
@@ -302,7 +329,7 @@ public class ActualNodeData implements searchInterface{
     }
 
     /**
-     * Remote method to see if Im the node that needs to check if I have the file or i need to ask to my predeccessor.
+     * Remote method to see if Im the node that needs to check if I have the file or i need to ask to my succesor.
      * @param indexNode
      * @param fileName
      * @return
@@ -315,6 +342,7 @@ public class ActualNodeData implements searchInterface{
             boolean IHaveIt=FilesUtil.isFileOnDirectory(fileName,this.source);
             if(IHaveIt){
                 Print.strong("Yes!, I have \""+fileName+"\"");
+                new ServerUpload().start();
                 return true;
             }else{
                 Print.error("Sorry, I don't have \""+fileName+"\"");
