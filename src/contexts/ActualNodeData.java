@@ -326,7 +326,12 @@ public class ActualNodeData implements searchInterface{
                 String ip=successor.getIPaddress().toString();
                 Registry registry = LocateRegistry.getRegistry(ip.substring(1, ip.length()), successor.getRMIport());
                 searchInterface stub = (searchInterface) registry.lookup("searchInterface");
-                return stub.searchRemoteFile(indexNode,fileName);
+                boolean founded= stub.searchRemoteFile(indexNode,fileName);
+                if(founded)
+                    Print.strong("It seems that "+membersOfRing.get(indexNode).toString()+" have \""+fileName+"\"!");
+                else
+                    Print.error("It seems that "+membersOfRing.get(indexNode).toString()+" have \""+fileName+"\"!");
+                return founded;
             }catch (Exception e){
                 System.err.println("Something went wrong...");
                 e.printStackTrace();

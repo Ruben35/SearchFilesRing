@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="SearchFilesRing:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/SearchFilesRing_jar</output-path>
+    <root id="archive" name="SearchFilesRing.jar">
+      <element id="module-output" name="SearchFilesRing" />
+    </root>
+  </artifact>
+</component>

@@ -237,6 +237,7 @@ public class SearchWindow extends JFrame implements ActionListener {
         scrollTextArea.setAutoscrolls(true);
         PrintStream printStream = new PrintStream(new CustomOutputStreamPane(textArea));
         System.setOut(printStream);
+        System.out.println("Hola");
 
         mainPanel.add(scrollTextArea);
     }

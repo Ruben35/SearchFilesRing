@@ -23,6 +23,8 @@ public class ServerUpload extends Thread{
         return instance;
     }
 
+    private ServerUpload(){}
+
     @Override
     public void run(){
         try{

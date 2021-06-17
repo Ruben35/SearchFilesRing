@@ -24,6 +24,8 @@ public class ServerMulticast extends Thread{
         return instance;
     }
 
+    private ServerMulticast(){};
+
     @Override
     public void run(){
         try{
